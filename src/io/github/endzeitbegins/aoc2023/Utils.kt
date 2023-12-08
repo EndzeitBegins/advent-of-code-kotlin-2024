@@ -12,3 +12,29 @@ fun <T> checkSolution(solution: T, expectedSolution: T) =
 
 fun Int.pow(exp: Int): Long =
     java.math.BigInteger.valueOf(this.toLong()).pow(exp).toLong()
+
+fun gcd(a: Long, b: Long): Long {
+    var l = a
+    var r = b
+
+    while (r > 0) {
+        val temp = r
+        r = l % r
+        l = temp
+    }
+    return l
+}
+
+fun lcm(a: Long, b: Long): Long {
+    return a * (b / gcd(a, b))
+}
+
+fun lcm(numbers: Set<Long>): Long {
+    var result = numbers.first()
+
+    for (number in numbers) {
+        result = lcm(result, number)
+    }
+
+    return result
+}
