@@ -9,3 +9,6 @@ fun readInputLines(name: String) = readInput(name).lines()
 
 fun <T> checkSolution(solution: T, expectedSolution: T) =
     check(solution == expectedSolution) { "Expected a result of $expectedSolution but got $solution instead" }
+
+fun Int.pow(exp: Int): Long =
+    java.math.BigInteger.valueOf(this.toLong()).pow(exp).toLong()
