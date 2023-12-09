@@ -158,97 +158,37 @@ fun Almanac.findClosestLocationFromSeeds(): Long {
 }
 
 fun Almanac.findClosestLocationFromSeedRanges(): Long {
-    var locationTry: Long = 0
+    var location: Long = -1
+
     while (true) {
-        val htlMapping = humidityToLocation.rows.find { htl -> locationTry in htl.destinationRange}
-        val humidityTry: Long
-        if (htlMapping != null) {
-            val offset = locationTry - htlMapping.destinationRangeStart
-            humidityTry = htlMapping.sourceRangeStart + offset
-        } else if (humidityToLocation.rows.none { htl -> locationTry in htl.sourceRange  }) {
-            humidityTry = locationTry
-        } else {
-            locationTry++
-            continue
-        }
+        location += 1
 
-        val tthMapping = temperatureToHumidity.rows.find { tth -> humidityTry in tth.destinationRange}
-        val temperatureTry: Long
-        if (tthMapping != null) {
-            val offset = humidityTry - tthMapping.destinationRangeStart
-            temperatureTry = tthMapping.sourceRangeStart + offset
-        } else if (temperatureToHumidity.rows.none { tth -> humidityTry in tth.sourceRange  }) {
-            temperatureTry = humidityTry
-        } else {
-            locationTry++
-            continue
-        }
+        val humidity = findSourceOrNull(location, humidityToLocation) ?: continue
+        val temperature = findSourceOrNull(humidity, temperatureToHumidity) ?: continue
+        val light = findSourceOrNull(temperature, lightToTemperature) ?: continue
+        val water = findSourceOrNull(light, waterToLight) ?: continue
+        val fertilizer = findSourceOrNull(water, fertilizerToWater) ?: continue
+        val soil = findSourceOrNull(fertilizer, soilToFertilizer) ?: continue
+        val seed = findSourceOrNull(soil, seedToSoil) ?: continue
 
-        val lttMapping = lightToTemperature.rows.find { ltt -> temperatureTry in ltt.destinationRange}
-        val lightTry: Long
-        if (lttMapping != null) {
-            val offset = temperatureTry - lttMapping.destinationRangeStart
-            lightTry = lttMapping.sourceRangeStart + offset
-        } else if (lightToTemperature.rows.none { ltt -> temperatureTry in ltt.sourceRange  }) {
-            lightTry = temperatureTry
-        } else {
-            locationTry++
-            continue
+        if (seedRanges.any { range -> seed in range }) {
+            return location
         }
+    }
+}
 
-        val wtlMapping = waterToLight.rows.find { wtl -> lightTry in wtl.destinationRange}
-        val waterTry: Long
-        if (wtlMapping != null) {
-            val offset = lightTry - wtlMapping.destinationRangeStart
-            waterTry = wtlMapping.sourceRangeStart + offset
-        } else if (waterToLight.rows.none { wtl -> lightTry in wtl.sourceRange  }) {
-            waterTry = lightTry
-        } else {
-            locationTry++
-            continue
-        }
+private fun findSourceOrNull(destination: Long, mappingTable: MappingTable): Long? {
+    val mapping = mappingTable.rows
+        .find { mapping -> destination in mapping.destinationRange }
 
-        val ftwMapping = fertilizerToWater.rows.find { ftw -> waterTry in ftw.destinationRange}
-        val fertilizerTry: Long
-        if (ftwMapping != null) {
-            val offset = waterTry - ftwMapping.destinationRangeStart
-            fertilizerTry = ftwMapping.sourceRangeStart + offset
-        } else if (fertilizerToWater.rows.none { ftw -> waterTry in ftw.sourceRange  }) {
-            fertilizerTry = waterTry
-        } else {
-            locationTry++
-            continue
-        }
+    return when {
+        mapping != null ->
+            mapping.sourceRangeStart + (destination - mapping.destinationRangeStart)
 
-        val stfMapping = soilToFertilizer.rows.find { stf -> fertilizerTry in stf.destinationRange}
-        val soilTry: Long
-        if (stfMapping != null) {
-            val offset = fertilizerTry - stfMapping.destinationRangeStart
-            soilTry = stfMapping.sourceRangeStart + offset
-        } else if (soilToFertilizer.rows.none { wtl -> fertilizerTry in wtl.sourceRange  }) {
-            soilTry = fertilizerTry
-        } else {
-            locationTry++
-            continue
-        }
+        mappingTable.rows.none { tth -> destination in tth.sourceRange } ->
+            destination
 
-        val stsMapping = seedToSoil.rows.find { sts -> soilTry in sts.destinationRange}
-        val seedTry: Long
-        if (stsMapping != null) {
-            val offset = soilTry - stsMapping.destinationRangeStart
-            seedTry = stsMapping.sourceRangeStart + offset
-        } else if (seedToSoil.rows.none { wtl -> soilTry in wtl.sourceRange  }) {
-            seedTry = soilTry
-        } else {
-            locationTry++
-            continue
-        }
-
-        if (seedRanges.any { range -> seedTry in range }) {
-            return locationTry
-        }
-        locationTry++
-        continue
+        else -> null
     }
 }
 
@@ -273,6 +213,6 @@ fun main() {
     println(part1(input))
 
     // part 2
-     checkSolution(part2(testInput), 46)
-     println(part2(input))
+    checkSolution(part2(testInput), 46)
+    println(part2(input))
 }
