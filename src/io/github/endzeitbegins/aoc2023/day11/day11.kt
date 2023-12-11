@@ -6,15 +6,11 @@ import io.github.endzeitbegins.aoc2023.readInput
 import kotlin.math.absoluteValue
 
 class Image(input: String) {
-    val galaxyPositions: List<Position>
-
-    init {
-        galaxyPositions = buildList {
-            input.lines().forEachIndexed { y, row ->
-                row.forEachIndexed { x, cell ->
-                    if (cell == '#') {
-                        add(Position(x = x, y = y))
-                    }
+    val galaxyPositions: List<Position> = buildList {
+        input.lines().forEachIndexed { y, row ->
+            row.forEachIndexed { x, cell ->
+                if (cell == '#') {
+                    add(Position(x = x, y = y))
                 }
             }
         }
@@ -24,89 +20,39 @@ class Image(input: String) {
     private val rowsWithGalaxy: Set<Int> = galaxyPositions.map { it.y }.toSet()
 
     fun distanceBetween(a: Position, b: Position, expansionFactor: Long): Long {
-        val minX = minOf(a.x, b.x)
-        val maxX = maxOf(a.x, b.x)
-        val xRange = minX until maxX
-        val galaxiesInRow = columnsWithGalaxy.filter { it in xRange }.size
-        val emptySpacesInRow = (maxX - minX) - galaxiesInRow
-        val xDistance = galaxiesInRow + expansionFactor * emptySpacesInRow
+        val xDistance = determineDistanceForDimension(
+            aValue = a.x,
+            bValue = b.x,
+            dimensionIndicesWithGalaxy = columnsWithGalaxy,
+            expansionFactor = expansionFactor
+        )
 
-        val minY = minOf(a.y, b.y)
-        val maxY = maxOf(a.y, b.y)
-        val yRange = minY until maxY
-        val galaxiesInColumn = rowsWithGalaxy.filter { it in yRange }.size
-        val emptySpacesInColumn = (maxY - minY) - galaxiesInColumn
-        val yDistance = galaxiesInColumn + expansionFactor * emptySpacesInColumn
+        val yDistance = determineDistanceForDimension(
+            aValue = a.y,
+            bValue = b.y,
+            dimensionIndicesWithGalaxy = rowsWithGalaxy,
+            expansionFactor = expansionFactor
+        )
 
         return xDistance + yDistance
     }
-}
 
+    private fun determineDistanceForDimension(
+        aValue: Int,
+        bValue: Int,
+        expansionFactor: Long,
+        dimensionIndicesWithGalaxy: Set<Int>
+    ): Long {
+        val min = minOf(aValue, bValue)
+        val max = maxOf(aValue, bValue)
+        val range = min until max
+        val galaxiesInDimension = dimensionIndicesWithGalaxy.filter { it in range }.size
+        val emptySpacesInDimension = (max - min) - galaxiesInDimension
 
-
-fun List<String>.expand(): List<List<Char>> {
-    val rowsWithGalaxy = mutableSetOf<Int>()
-    val columnsWithGalaxy = mutableSetOf<Int>()
-
-    this.forEachIndexed { y, row ->
-        row.forEachIndexed { x, cell ->
-            if (cell == '#') {
-                rowsWithGalaxy.add(y)
-                columnsWithGalaxy.add(x)
-            }
-        }
+        return galaxiesInDimension + expansionFactor * emptySpacesInDimension
     }
-
-    val blankRow = List(2 * first().length - columnsWithGalaxy.size) { '.' }
-
-    val expandedRows = mutableListOf<List<Char>>()
-
-    this.forEachIndexed { y, row ->
-        if (y in rowsWithGalaxy) {
-            val expandedCells = mutableListOf<Char>()
-
-            row.forEachIndexed { x, cell ->
-                if (x in columnsWithGalaxy) {
-                    expandedCells.add(cell)
-                } else {
-                    expandedCells.add('.')
-                    expandedCells.add('.')
-                }
-            }
-
-            expandedRows.add(expandedCells)
-
-        } else {
-            expandedRows.add(blankRow)
-            expandedRows.add(blankRow)
-        }
-    }
-
-    return expandedRows
 }
 
-fun List<List<Char>>.detectGalaxies(): List<Position> {
-    val galaxyPositions = mutableListOf<Position>()
-    
-    this.forEachIndexed { y, row -> 
-        row.forEachIndexed { x, cell -> 
-            if (cell == '#') {
-                galaxyPositions.add(
-                    Position(x = x, y = y)
-                )
-            }
-        }
-    }
-    
-    return galaxyPositions
-}
-
-fun Position.distanceTo(other: Position): Int {
-    val xDistance = (this.x - other.x).absoluteValue
-    val yDistance = (this.y - other.y).absoluteValue
-
-    return xDistance + yDistance
-}
 
 fun Image.determineGalaxyDistances(expansionFactor: Long = 2) : Long{
     var totalDistance = 0L
