@@ -1,9 +1,9 @@
 package io.github.endzeitbegins.aoc2023.day11
 
-import io.github.endzeitbegins.aoc2023.Position
 import io.github.endzeitbegins.aoc2023.checkSolution
 import io.github.endzeitbegins.aoc2023.readInput
-import kotlin.math.absoluteValue
+
+data class Position(val x: Int, val y: Int)
 
 class Image(input: String) {
     val galaxyPositions: List<Position> = buildList {

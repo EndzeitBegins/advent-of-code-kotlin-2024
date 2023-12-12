@@ -38,5 +38,3 @@ fun lcm(numbers: Set<Long>): Long {
 
     return result
 }
-
-data class Position(val x: Int, val y: Int)

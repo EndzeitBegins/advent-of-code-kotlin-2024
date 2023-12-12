@@ -1,55 +1,66 @@
 package io.github.endzeitbegins.aoc2023.day10
 
-import io.github.endzeitbegins.aoc2023.Position
 import io.github.endzeitbegins.aoc2023.checkSolution
 import io.github.endzeitbegins.aoc2023.readInput
-
-enum class Tile(val connectedTo: Set<Direction>) {
-    PIPE_NS(setOf(Direction.NORTH, Direction.SOUTH)),
-    PIPE_EW(setOf(Direction.EAST, Direction.WEST)),
-    BEND_NE(setOf(Direction.NORTH, Direction.EAST)),
-    BEND_NW(setOf(Direction.NORTH, Direction.WEST)),
-    BEND_SW(setOf(Direction.SOUTH, Direction.WEST)),
-    BEND_SE(setOf(Direction.SOUTH, Direction.EAST)),
-    GROUND(emptySet()),
-    START(setOf(Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST));
-
-    companion object {
-        fun from(c: Char): Tile {
-            return when (c) {
-                '|' -> Tile.PIPE_NS
-                '-' -> Tile.PIPE_EW
-                'L' -> Tile.BEND_NE
-                'J' -> Tile.BEND_NW
-                '7' -> Tile.BEND_SW
-                'F' -> Tile.BEND_SE
-                '.' -> Tile.GROUND
-                'S' -> Tile.START
-                else -> error("Unsupported tile $c")
-            }
-        }
-    }
-}
-
-fun Tile.singleConnectionOrNull(from: Direction): Direction? {
-    return connectedTo.singleOrNull { it != from }
-}
-
-fun Tile.singleConnection(from: Direction): Direction {
-    return connectedTo.single { it != from }
-}
 
 enum class Direction {
     NORTH, EAST, SOUTH, WEST
 }
 
+private fun Direction.toOpposite(): Direction = when (this) {
+    Direction.NORTH -> Direction.SOUTH
+    Direction.SOUTH -> Direction.NORTH
+    Direction.WEST -> Direction.EAST
+    Direction.EAST -> Direction.WEST
+}
+
+data class Position(val x: Int, val y: Int)
+
+private fun Position.isIn(sketch: Sketch): Boolean =
+    x in sketch.minX..sketch.maxX && y in sketch.minY..sketch.maxY
+
+private fun northOf(position: Position) = position.copy(y = position.y - 1)
+private fun southOf(position: Position) = position.copy(y = position.y + 1)
+private fun westOf(position: Position) = position.copy(x = position.x - 1)
+private fun eastOf(position: Position) = position.copy(x = position.x + 1)
+private fun Position.nextIn(
+    direction: Direction
+) = when (direction) {
+    Direction.NORTH -> northOf(this)
+    Direction.SOUTH -> southOf(this)
+    Direction.WEST -> westOf(this)
+    Direction.EAST -> eastOf(this)
+}
+
+enum class Tile(val symbol: Char, val connectedTo: Set<Direction>) {
+    PIPE_NS(symbol = '|', connectedTo = setOf(Direction.NORTH, Direction.SOUTH)),
+    PIPE_EW(symbol = '-', connectedTo = setOf(Direction.EAST, Direction.WEST)),
+    BEND_NE(symbol = 'L', connectedTo = setOf(Direction.NORTH, Direction.EAST)),
+    BEND_NW(symbol = 'J', connectedTo = setOf(Direction.NORTH, Direction.WEST)),
+    BEND_SW(symbol = '7', connectedTo = setOf(Direction.SOUTH, Direction.WEST)),
+    BEND_SE(symbol = 'F', connectedTo = setOf(Direction.SOUTH, Direction.EAST)),
+    GROUND(symbol = '.', connectedTo = emptySet());
+
+    companion object {
+        fun from(symbol: Char): Tile {
+            return entries.singleOrNull { it.symbol == symbol }
+                ?: error("Unsupported tile $symbol")
+        }
+    }
+}
+
+data class Pipe(val position: Position, val type: Tile)
+
 class Sketch(input: String) {
-    val lines = input.lines()
-    val startPosition: Position = determineStartPosition()
+    private val lines = input.lines()
+
     val minX: Int = 0
     val minY: Int = 0
     val maxX: Int = lines.first().lastIndex
     val maxY: Int = lines.lastIndex
+
+    val startPosition: Position = determineStartPosition()
+    val startTile: Tile = determineStartTile()
 
     operator fun get(x: Int, y: Int): Tile {
         return Tile.from(lines[y][x])
@@ -65,135 +76,77 @@ class Sketch(input: String) {
         }
         error("Couldn't determine start position")
     }
-}
 
-data class Loop(
-    val positions: List<Position>,
-    val leftNeighbours: Set<Position>,
-    val rightNeighbours: Set<Position>,
-)
+    private fun determineStartTile(): Tile {
+        val isConnectedToNorth = northOf(startPosition)
+            .let { position -> position.isIn(this) && get(position).connectedTo.contains(Direction.SOUTH) }
+        val isConnectedToSouth = southOf(startPosition)
+            .let { position -> position.isIn(this) && get(position).connectedTo.contains(Direction.NORTH) }
+        val isConnectedToWest = westOf(startPosition)
+            .let { position -> position.isIn(this) && get(position).connectedTo.contains(Direction.EAST) }
+        val isConnectedToEast = eastOf(startPosition)
+            .let { position -> position.isIn(this) && get(position).connectedTo.contains(Direction.WEST) }
 
-fun Sketch.calculateLoop(): Loop {
-    val loop = mutableListOf(startPosition)
-    val leftNeighbours = mutableListOf<Position>()
-    val rightNeighbours = mutableListOf<Position>()
+        val connectedTo = mutableSetOf<Direction>()
 
-    var (position, direction) = findPipeConnectedToStart()
-    while (position != startPosition) {
-        loop += position
+        if (isConnectedToNorth) connectedTo += Direction.NORTH
+        if (isConnectedToSouth) connectedTo += Direction.SOUTH
+        if (isConnectedToWest) connectedTo += Direction.WEST
+        if (isConnectedToEast) connectedTo += Direction.EAST
 
-        val pipe = get(position)
-
-        direction = pipe.singleConnection(direction)
-
-        position = when (direction) {
-            Direction.NORTH -> position.copy(y = position.y - 1)
-            Direction.SOUTH -> position.copy(y = position.y + 1)
-            Direction.WEST -> position.copy(x = position.x - 1)
-            Direction.EAST -> position.copy(x = position.x + 1)
-        }
-
-        leftNeighbours += when (direction) {
-            Direction.NORTH -> position.copy(x = position.x - 1)
-            Direction.SOUTH -> position.copy(x = position.x + 1)
-            Direction.WEST -> position.copy(y = position.y + 1)
-            Direction.EAST -> position.copy(y = position.y - 1)
-        }
-        rightNeighbours += when (direction) {
-            Direction.NORTH -> position.copy(x = position.x + 1)
-            Direction.SOUTH -> position.copy(x = position.x - 1)
-            Direction.WEST -> position.copy(y = position.y - 1)
-            Direction.EAST -> position.copy(y = position.y + 1)
-        }
-
-
-
-        direction = when (direction) {
-            Direction.NORTH -> Direction.SOUTH
-            Direction.SOUTH -> Direction.NORTH
-            Direction.WEST -> Direction.EAST
-            Direction.EAST -> Direction.WEST
-        }
-    }
-
-    leftNeighbours.removeAll(loop)
-    rightNeighbours.removeAll(loop)
-
-    return Loop(
-        positions = loop,
-        leftNeighbours = leftNeighbours.toSet(),
-        rightNeighbours = rightNeighbours.toSet(),
-    )
-}
-
-private fun Sketch.findPipeConnectedToStart() = when {
-    startPosition.x - 1 >= minX && get(
-        startPosition.x - 1,
-        startPosition.y
-    ).singleConnectionOrNull(Direction.EAST) != null -> {
-        Position(x = startPosition.x - 1, y = startPosition.y) to Direction.EAST
-    }
-
-    startPosition.x + 1 <= maxX && get(
-        startPosition.x + 1,
-        startPosition.y
-    ).singleConnectionOrNull(Direction.WEST) != null -> {
-        Position(x = startPosition.x + 1, y = startPosition.y) to Direction.WEST
-    }
-
-    startPosition.y - 1 >= minY && get(
-        startPosition.x,
-        startPosition.y - 1
-    ).singleConnectionOrNull(Direction.SOUTH) != null -> {
-        Position(x = startPosition.x, y = startPosition.y - 1) to Direction.SOUTH
-    }
-
-    else -> {
-        Position(x = startPosition.x, y = startPosition.y + 1) to Direction.NORTH
+        return Tile.entries.single { it.connectedTo == connectedTo }
     }
 }
 
 private fun Sketch.get(position: Position) =
     get(x = position.x, y = position.y)
 
-private fun Sketch.findNeighbours(positions: Set<Position>, loop: List<Position>): Set<Position> {
-    val foundPositions = mutableSetOf<Position>()
-    val positionsToCheck = linkedSetOf<Position>()
-    positionsToCheck.addAll(positions)
-
-    while (positionsToCheck.isNotEmpty()) {
-        val positionToCheck = positionsToCheck.removeFirst()
-
-        if (positionToCheck in loop) {
-            // do NOT scan neighbours of loop piece
-            continue
-        }
-
-        if (positionToCheck.x in minX..maxX && positionToCheck.y in minY..maxY) {
-            foundPositions += positionToCheck
-        }
-
-        val neighbours = listOf(
-            positionToCheck.copy(x = positionToCheck.x - 1),
-            positionToCheck.copy(x = positionToCheck.x + 1),
-            positionToCheck.copy(y = positionToCheck.y - 1),
-            positionToCheck.copy(y = positionToCheck.y + 1),
-        ).filter { neighbour -> neighbour.x in minX..maxX && neighbour.y in minY..maxY }
-
-        for (neighbour in neighbours) {
-            if (neighbour !in foundPositions && neighbour !in positionsToCheck) {
-                positionsToCheck += neighbour
-            }
-        }
+fun Sketch.calculateLoop(): List<Pipe> {
+    fun Tile.singleConnection(from: Direction): Direction {
+        return connectedTo.single { it != from }
     }
 
-    return foundPositions
+    val loop = mutableListOf(Pipe(startPosition, startTile))
+
+    var direction = startTile.connectedTo.first()
+    var position = startPosition.nextIn(direction)
+    direction = direction.toOpposite()
+
+    while (position != startPosition) {
+        val tile = get(position)
+
+        loop += Pipe(position, tile)
+
+        direction = tile.singleConnection(from = direction)
+
+        position = position.nextIn(direction)
+        direction = direction.toOpposite()
+    }
+
+    return loop
+}
+
+private fun Position.isSurroundedBy(loop: List<Pipe>): Boolean {
+    val position = this
+
+    val relevantPipes = loop
+        .filter { pipe -> pipe.position.y == position.y && pipe.position.x <= position.x }
+
+    if (relevantPipes.any { pipe -> pipe.position == position }) {
+        return false
+    }
+
+    val intersections = relevantPipes
+        .filterNot { pipe -> pipe.type in setOf(Tile.PIPE_EW, Tile.BEND_NE, Tile.BEND_NW) }
+        .size
+
+    return intersections % 2 == 1
 }
 
 fun part1(input: String): Int {
     val sketch = Sketch(input)
     val loop = sketch.calculateLoop()
-    val loopSize = loop.positions.size
+    val loopSize = loop.size
 
     return loopSize / 2 + loopSize % 2
 }
@@ -202,33 +155,19 @@ fun part2(input: String): Int {
     val sketch = Sketch(input)
     val loop = sketch.calculateLoop()
 
-    val lefties = sketch.findNeighbours(loop.leftNeighbours, loop.positions)
-    val righties = sketch.findNeighbours(loop.rightNeighbours, loop.positions)
-
-    val totalCells = (sketch.maxX + 1) * (sketch.maxY + 1)
-    val outsideCells = if (lefties.any { it.x == 0 || it.y == 0 }) {
-        lefties.size
-    } else {
-        righties.size
-    }
+    var count = 0
 
     for (y in sketch.minY..sketch.maxY) {
         for (x in sketch.minX..sketch.maxX) {
-            val pos = Position(x, y)
-            if (pos in lefties) {
-                print('O')
-            } else if (pos in righties) {
-                print('X')
-            } else if (pos in loop.positions) {
-                print(sketch.lines[y][x])
-            } else {
-                print('.')
+            val position = Position(x, y)
+
+            if (position.isSurroundedBy(loop)) {
+                count += 1
             }
         }
-        println()
     }
 
-    return totalCells - outsideCells - loop.positions.size
+    return count
 }
 
 fun main() {
