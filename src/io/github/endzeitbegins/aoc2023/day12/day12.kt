@@ -2,9 +2,8 @@ package io.github.endzeitbegins.aoc2023.day12
 
 import io.github.endzeitbegins.aoc2023.checkSolution
 import io.github.endzeitbegins.aoc2023.readInput
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.*
+import kotlin.coroutines.CoroutineContext
 
 
 data class ConditionRecord(
@@ -114,7 +113,11 @@ fun part2(input: String): Int {
         val permutations = parseConditionRecords(input)
             .map { record -> record.unfold() }
             .map { conditionRecord ->
-                async { conditionRecord.countPossiblePermutations() }
+                async(Dispatchers.Default) {
+                    val countPossiblePermutations = conditionRecord.countPossiblePermutations()
+                    println('X')
+                    countPossiblePermutations
+                }
             }
 
         permutations.awaitAll().sum()
