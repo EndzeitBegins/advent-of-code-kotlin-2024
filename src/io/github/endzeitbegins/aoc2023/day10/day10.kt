@@ -32,6 +32,23 @@ private fun Position.nextIn(
     Direction.EAST -> eastOf(this)
 }
 
+private fun Position.isSurroundedBy(loop: List<Pipe>): Boolean {
+    val position = this
+
+    val relevantPipes = loop
+        .filter { pipe -> pipe.position.y == position.y && pipe.position.x <= position.x }
+
+    if (relevantPipes.any { pipe -> pipe.position == position }) {
+        return false
+    }
+
+    val intersections = relevantPipes
+        .filterNot { pipe -> pipe.type in setOf(Tile.PIPE_EW, Tile.BEND_NE, Tile.BEND_NW) }
+        .size
+
+    return intersections % 2 == 1
+}
+
 enum class Tile(val symbol: Char, val connectedTo: Set<Direction>) {
     PIPE_NS(symbol = '|', connectedTo = setOf(Direction.NORTH, Direction.SOUTH)),
     PIPE_EW(symbol = '-', connectedTo = setOf(Direction.EAST, Direction.WEST)),
@@ -126,22 +143,15 @@ fun Sketch.calculateLoop(): List<Pipe> {
     return loop
 }
 
-private fun Position.isSurroundedBy(loop: List<Pipe>): Boolean {
-    val position = this
 
-    val relevantPipes = loop
-        .filter { pipe -> pipe.position.y == position.y && pipe.position.x <= position.x }
-
-    if (relevantPipes.any { pipe -> pipe.position == position }) {
-        return false
+private fun Sketch.allPositions(): Sequence<Position> =
+    sequence {
+        for (y in minY..maxY) {
+            for (x in minX..maxX) {
+                yield(Position(x, y))
+            }
+        }
     }
-
-    val intersections = relevantPipes
-        .filterNot { pipe -> pipe.type in setOf(Tile.PIPE_EW, Tile.BEND_NE, Tile.BEND_NW) }
-        .size
-
-    return intersections % 2 == 1
-}
 
 fun part1(input: String): Int {
     val sketch = Sketch(input)
@@ -155,19 +165,9 @@ fun part2(input: String): Int {
     val sketch = Sketch(input)
     val loop = sketch.calculateLoop()
 
-    var count = 0
-
-    for (y in sketch.minY..sketch.maxY) {
-        for (x in sketch.minX..sketch.maxX) {
-            val position = Position(x, y)
-
-            if (position.isSurroundedBy(loop)) {
-                count += 1
-            }
-        }
-    }
-
-    return count
+    return sketch
+        .allPositions()
+        .count { position -> position.isSurroundedBy(loop) }
 }
 
 fun main() {
