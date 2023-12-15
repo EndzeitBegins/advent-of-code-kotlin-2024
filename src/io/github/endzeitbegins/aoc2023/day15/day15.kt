@@ -17,6 +17,11 @@ fun String.calculateHash(): Int {
     return hashValue
 }
 
+data class Lens(
+    val label: String,
+    val focalLength: Int,
+)
+
 fun part1(input: String): Int {
     val steps = input.split(',')
 
@@ -25,7 +30,38 @@ fun part1(input: String): Int {
 }
 
 fun part2(input: String): Int {
-    return input.length
+    val steps = input.split(',')
+
+    val boxes = List(256) {
+        mutableListOf<Lens>()
+    }
+    for (step in steps) {
+        val parts = step.split('-', '=')
+
+        val label = parts[0]
+        val boxIndex = label.calculateHash()
+
+        val action = step[label.length]
+        if (action == '=') {
+            val focalLength = step.substring(label.length + 1).toInt()
+            val newLens = Lens(label = label, focalLength = focalLength)
+
+            val indexOfLens = boxes[boxIndex].indexOfFirst { lens -> lens.label == label }
+            if (indexOfLens >= 0) {
+                boxes[boxIndex][indexOfLens] = newLens
+            } else {
+                boxes[boxIndex].add(newLens)
+            }
+        } else {
+            boxes[boxIndex].removeIf { lens -> lens.label == label }
+        }
+    }
+
+    return boxes.foldIndexed(0) { boxNumber, focusingPower, box ->
+        focusingPower + box.foldIndexed(0) { slot, boxFocusingPower, lens ->
+            boxFocusingPower + (boxNumber + 1) * (slot + 1) * lens.focalLength
+        }
+    }
 }
 
 fun main() {
@@ -39,6 +75,6 @@ fun main() {
     println(part1(input))
 
     // part 2
-    // checkSolution(part2(testInput), 1)
-    // println(part2(input))
+     checkSolution(part2(testInput2), 145)
+     println(part2(input))
 }
