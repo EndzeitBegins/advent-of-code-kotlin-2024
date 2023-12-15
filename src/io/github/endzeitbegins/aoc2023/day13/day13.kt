@@ -8,8 +8,8 @@ data class Pattern(
     val columns: List<String>,
 )
 
-fun List<String>.determinePossibleReflectionPoints(supportSmudge: Boolean): List<Int> {
-    val allowedSmudges = if (supportSmudge) 1 else 0
+fun List<String>.determinePossibleReflectionPoints(needsSmudge: Boolean): List<Int> {
+    val allowedSmudges = if (needsSmudge) 1 else 0
 
     return zipWithNext()
         .withIndex()
@@ -35,8 +35,8 @@ fun String.equalsWithSmudges(other: String, allowedSmudges: Int): Boolean {
     return true
 }
 
-fun List<String>.reflectsAt(index: Int, supportSmudge: Boolean): Boolean {
-    var allowedSmudges = if (supportSmudge) 1 else 0
+fun List<String>.reflectsAt(index: Int, needsSmudge: Boolean): Boolean {
+    var requiredSmudges = if (needsSmudge) 1 else 0
 
     var i = index
     var j = index + 1
@@ -46,8 +46,8 @@ fun List<String>.reflectsAt(index: Int, supportSmudge: Boolean): Boolean {
         val b = this[j]
 
         if (a != b) {
-            if (allowedSmudges >= 1 && a.equalsWithSmudges(b, allowedSmudges)) {
-                allowedSmudges -= 1
+            if (requiredSmudges >= 1 && a.equalsWithSmudges(b, requiredSmudges)) {
+                requiredSmudges = 0
             } else {
                 return false
             }
@@ -57,33 +57,32 @@ fun List<String>.reflectsAt(index: Int, supportSmudge: Boolean): Boolean {
         j += 1
     }
 
-    return true
+    return requiredSmudges == 0
 }
 
-fun Pattern.determineReflectionPoints(supportSmudge: Boolean = false): List<ReflectionPoint> {
-    val reflectingColumns = determineReflectingColumns(supportSmudge)
-    val reflectingRows = determineReflectingRows(supportSmudge)
-
-    return reflectingColumns + reflectingRows
+fun Pattern.determineReflectionPoints(needsSmudge: Boolean = false): ReflectionPoint {
+    return determineReflectingColumns(needsSmudge).takeIf { it.isNotEmpty() }?.single()
+        ?: determineReflectingRows(needsSmudge).single()
 }
 
-private fun Pattern.determineReflectingColumns(supportSmudge: Boolean): List<ReflectionPoint.Column> {
+private fun Pattern.determineReflectingColumns(needsSmudge: Boolean): List<ReflectionPoint.Column> {
     return columns
-        .determinePossibleReflectionPoints(supportSmudge = supportSmudge)
-        .filter { index -> columns.reflectsAt(index, supportSmudge) }
+        .determinePossibleReflectionPoints(needsSmudge = needsSmudge)
+        .filter { index -> columns.reflectsAt(index, needsSmudge) }
         .map { index -> ReflectionPoint.Column(index) }
 }
 
-private fun Pattern.determineReflectingRows(supportSmudge: Boolean): List<ReflectionPoint.Row> {
+private fun Pattern.determineReflectingRows(needsSmudge: Boolean): List<ReflectionPoint.Row> {
     return rows
-        .determinePossibleReflectionPoints(supportSmudge = supportSmudge)
-        .filter { index -> rows.reflectsAt(index, supportSmudge) }
+        .determinePossibleReflectionPoints(needsSmudge = needsSmudge)
+        .filter { index -> rows.reflectsAt(index, needsSmudge) }
         .map { index -> ReflectionPoint.Row(index) }
 }
 
 sealed interface ReflectionPoint {
 
     val index: Int
+
     data class Row(override val index: Int) : ReflectionPoint
     data class Column(override val index: Int) : ReflectionPoint
 }
@@ -125,68 +124,19 @@ fun part1(input: String): Int {
     val patterns = parsePatterns(input)
 
     return patterns
-        .flatMap { pattern -> pattern.determineReflectionPoints() }
-        .sumOf { reflectionPoint -> reflectionPoint.score }
+        .sumOf { pattern -> pattern.determineReflectionPoints().score }
 }
 
 fun part2(input: String): Int {
     val patterns = parsePatterns(input)
 
     return patterns
-        .map { pattern ->
-            val reflectionsWithoutSmudge = pattern
-                .determineReflectionPoints(supportSmudge = false)
-            val reflectionsWithSmudge = pattern
-                .determineReflectionPoints(supportSmudge = true)
+        .sumOf { pattern ->
+            val reflectionWithSmudge = pattern
+                .determineReflectionPoints(needsSmudge = true)
 
-            val smudgeReflection = (reflectionsWithSmudge - reflectionsWithoutSmudge)
-                .minBy { it.index }
-
-            val index = smudgeReflection.index
-            val updatedPatternRows: List<String> = when(smudgeReflection) {
-                is ReflectionPoint.Column -> pattern.columns.fixSmudge(index).columnsToRows()
-                is ReflectionPoint.Row -> { pattern.rows.fixSmudge(index) }
-            }
-
-            val updatedPattern: Pattern =
-                rowsToPattern(updatedPatternRows)
-
-            val xx = updatedPattern.determineReflectionPoints(supportSmudge = false)
-            xx
-                .minBy { it.index }
-
+            reflectionWithSmudge.score
         }
-        .sumOf { reflectionPoint -> reflectionPoint.score }
-}
-
-private fun List<String>.columnsToRows(): List<String> {
-    return List(this.first().length) { index ->
-        this.map { it[index] }.joinToString(separator = "")
-    }
-}
-
-private fun List<String>.fixSmudge(index: Int): List<String> {
-    val updated = this.toMutableList()
-
-    var i = index
-    var j = index + 1
-
-    while (i >= 0 && j <= lastIndex) {
-        val a = this[i]
-        val b = this[j]
-
-        if (a != b) {
-            updated[i] = updated[j]
-
-            return updated
-        }
-
-        i -= 1
-        j += 1
-    }
-
-    return updated
-//    throw IllegalStateException("No smudge found!")
 }
 
 fun main() {
@@ -199,5 +149,5 @@ fun main() {
 
     // part 2
     checkSolution(part2(testInput), 400)
-//    println(part2(input))
+    println(part2(input))
 }
