@@ -22,6 +22,13 @@ data class Lens(
     val focalLength: Int,
 )
 
+private fun List<List<Lens>>.calculateFocusingPower() =
+    foldIndexed(0) { boxNumber, focusingPower, box ->
+        focusingPower + box.foldIndexed(0) { slot, boxFocusingPower, lens ->
+            boxFocusingPower + (boxNumber + 1) * (slot + 1) * lens.focalLength
+        }
+    }
+
 fun part1(input: String): Int {
     val steps = input.split(',')
 
@@ -57,11 +64,7 @@ fun part2(input: String): Int {
         }
     }
 
-    return boxes.foldIndexed(0) { boxNumber, focusingPower, box ->
-        focusingPower + box.foldIndexed(0) { slot, boxFocusingPower, lens ->
-            boxFocusingPower + (boxNumber + 1) * (slot + 1) * lens.focalLength
-        }
-    }
+    return boxes.calculateFocusingPower()
 }
 
 fun main() {
