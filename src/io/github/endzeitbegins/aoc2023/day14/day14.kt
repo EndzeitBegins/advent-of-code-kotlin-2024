@@ -230,10 +230,9 @@ private fun ReflectorDish.tiltAround(
             hashSums += hash
         } else {
             val repeatingStepWidth = tilts - firstOccurrence
+            val skippableSteps = (cycleCount - tilts) / repeatingStepWidth
 
-            val foo = (cycleCount - tilts) / repeatingStepWidth
-            val bar = tilts + foo * repeatingStepWidth
-            tilts = bar
+            tilts += skippableSteps * repeatingStepWidth
         }
 
         tilts += 1
