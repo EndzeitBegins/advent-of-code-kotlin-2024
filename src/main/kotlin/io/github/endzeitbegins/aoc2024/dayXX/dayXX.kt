@@ -1,7 +1,7 @@
-package io.github.endzeitbegins.aoc2023.dayXX
+package io.github.endzeitbegins.aoc2024.dayXX
 
-import io.github.endzeitbegins.aoc2023.checkSolution
-import io.github.endzeitbegins.aoc2023.readInput
+import io.github.endzeitbegins.aoc2024.checkSolution
+import io.github.endzeitbegins.aoc2024.readInput
 
 fun part1(input: String): Int {
     return input.length
