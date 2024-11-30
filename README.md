@@ -6,6 +6,14 @@ The repository contains some of my solutions to this year Advent of Code using t
 
 I've generated the base of this project initially using the [Advent of Code Kotlin Template][template] of 2023 delivered by JetBrains.
 
+## Generate files for a day
+
+The Gradle task `generateDay` can be used to scaffold the directory and files for a given day.
+
+```shell
+./gradlew generateDay -Pday=6
+```
+
 [^aoc]:
     [Advent of Code][aoc] – An annual event of Christmas-oriented programming challenges started December 2015.
     Every year since then, beginning on the first day of December, a programming puzzle is published every day for twenty-five days.
