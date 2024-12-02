@@ -4,7 +4,7 @@ import io.github.endzeitbegins.aoc2024.checkSolution
 import io.github.endzeitbegins.aoc2024.readInputLines
 import kotlin.math.abs
 
-fun part1(input: List<String>): Int {
+private fun part1(input: List<String>): Int {
     val (leftList, rightList) = parseLists(input)
 
     return leftList.sorted()
@@ -12,7 +12,7 @@ fun part1(input: List<String>): Int {
         .sumOf { (a, b) -> abs(a - b) }
 }
 
-fun part2(input: List<String>): Int {
+private fun part2(input: List<String>): Int {
     val (leftList, rightList) = parseLists(input)
 
     val leftFrequencies = leftList.toFrequencyMap()

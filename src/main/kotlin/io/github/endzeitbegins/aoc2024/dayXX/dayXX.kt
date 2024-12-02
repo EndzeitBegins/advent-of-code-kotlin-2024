@@ -3,11 +3,11 @@ package io.github.endzeitbegins.aoc2024.dayXX
 import io.github.endzeitbegins.aoc2024.checkSolution
 import io.github.endzeitbegins.aoc2024.readInput
 
-fun part1(input: String): Int {
+private fun part1(input: String): Int {
     return input.length
 }
 
-fun part2(input: String): Int {
+private fun part2(input: String): Int {
     return input.length
 }
 
