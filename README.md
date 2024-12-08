@@ -2,9 +2,10 @@
 
 Welcome to the Advent of Code[^aoc] 2024 project of [endzeitbegins][github].
 
-The repository contains some of my solutions to this year Advent of Code using the programming langue [Kotlin][kotlin].
+The repository contains some of my solutions to this years Advent of Code using the programming langue [Kotlin][kotlin].
 
 I've generated the base of this project initially using the [Advent of Code Kotlin Template][template] of 2023 delivered by JetBrains.
+This project was then forked off of [my project for the 2023 edition][aoc-2023].
 
 ## Generate files for a day
 
@@ -23,3 +24,4 @@ The Gradle task `generateDay` can be used to scaffold the directory and files fo
 [github]: https://github.com/endzeitbegins
 [kotlin]: https://kotlinlang.org
 [template]: https://github.com/kotlin-hands-on/advent-of-code-kotlin-template
+[aoc-2023]: https://github.com/EndzeitBegins/advent-of-code-kotlin-2023
